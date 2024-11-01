@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 import bcrypt
 import smtplib
 from email.mime.text import MIMEText
+from redis import Redis
+import logging
 
 # Load environment variables from .env file
 load_dotenv()
@@ -16,13 +18,24 @@ load_dotenv()
 app = Flask(__name__)
 
 # MongoDB configuration
-app.config['MONGO_URI'] = f"mongodb+srv://{os.environ.get('MONGO_USER')}:{os.environ.get('MONGO_PASS')}@url-short-python.br0gv.mongodb.net/url-login-database?retryWrites=true&w=majority"
+app.config['MONGO_URI'] = f"mongodb+srv://{os.environ.get('MONGO_USER')}:{os.environ.get('MONGO_PASS')}@url-short-python.br0gv.mongodb.net/{os.environ.get('MONGO_DB')}?retryWrites=true&w=majority"
 mongo = PyMongo(app)
 
-# Session config
-app.config['SESSION_TYPE'] = 'filesystem'
+# Session config for Redis
+app.config['SESSION_TYPE'] = 'redis'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'your_app_name:'  # Change to your app name
+app.config['SESSION_REDIS'] = Redis(
+    host=os.getenv('REDIS_HOST', 'localhost'),  # Default to localhost for local development
+    port=int(os.getenv('REDIS_PORT', 6379)),    # Default port 6379
+    password=os.getenv('REDIS_PASSWORD')         # Password if set, otherwise None
+)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 Session(app)
+
+# Logging configuration
+logging.basicConfig(level=logging.INFO)
 
 # OTP generation and email configuration
 def generate_otp():
@@ -51,9 +64,9 @@ def send_otp_email(email, otp, username):
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
             server.login(os.getenv('OTP_EMAIL'), os.getenv('OTP_EMAIL_PASSWORD'))
             server.sendmail(msg['From'], [email], msg.as_string())
-        print(f"OTP sent to {email}.")  # Log successful send
+        logging.info(f"OTP sent to {email}.")
     except Exception as e:
-        print(f"Failed to send email: {e}")  # Log error message
+        logging.error(f"Failed to send email: {e}")
 
 # Routes for authentication
 @app.route('/')
@@ -75,7 +88,7 @@ def register():
             return redirect(url_for('register'))
 
         otp = generate_otp()
-        print(f"Generated OTP: {otp}")
+        logging.info(f"Generated OTP: {otp}")
         send_otp_email(email, otp, username)
         
         session['pending_user'] = {
@@ -97,7 +110,7 @@ def verify_otp():
         input_otp = request.form['otp']
         if input_otp == session['pending_user']['otp']:
             user_data = session.pop('pending_user')
-            mongo.db.loginUsers.insert_one({  # Updated collection name
+            mongo.db.loginUsers.insert_one({
                 'username': user_data['username'],
                 'email': user_data['email'],
                 'password': user_data['password'],
@@ -112,14 +125,13 @@ def verify_otp():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    error = None  # Initialize the error variable
+    error = None
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
         
-        user = mongo.db.loginUsers.find_one({'email': email})  # Updated collection name
+        user = mongo.db.loginUsers.find_one({'email': email})
 
-        # Check if the email exists
         if user is None:
             error = "This email is not registered. Please check or register."
         elif not bcrypt.checkpw(password.encode('utf-8'), user['password']):
@@ -128,7 +140,6 @@ def login():
             session['user'] = {'username': user['username'], 'email': user['email']}
             return redirect(url_for('index'))
 
-    # Render the login template with the error variable
     return render_template('login.html', error=error)
 
 @app.route('/logout')
@@ -199,6 +210,11 @@ def delete_url(short_hash):
     mongo.db.urls.delete_one({'short_hash': short_hash, 'user_email': session['user']['email']})
     flash("URL deleted successfully!")
     return redirect(url_for('dashboard'))
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    logging.error(f"Error: {e}")
+    return "An error occurred.", 500
 
 if __name__ == '__main__':
     app.run(debug=True)
