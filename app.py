@@ -28,11 +28,11 @@ Session(app)
 def generate_otp():
     return ''.join(random.choices(string.digits, k=6))
 
-def send_otp_email(email, otp):
+def send_otp_email(email, otp, username):
     message_body = f"""
-    Hi there,
+    Hi {username},
 
-    Your One-Time Password (OTP) for the bLink Shortener application is: **{otp}**.
+    Your One-Time Password is: **{otp}**.
 
     Please enter this OTP to complete your registration process. Once registered, you can log in with your email and password.
 
@@ -47,9 +47,13 @@ def send_otp_email(email, otp):
     msg['From'] = os.getenv('OTP_EMAIL')
     msg['To'] = email
     
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-        server.login(os.getenv('OTP_EMAIL'), os.getenv('OTP_EMAIL_PASSWORD'))
-        server.sendmail(msg['From'], [email], msg.as_string())
+    try:
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(os.getenv('OTP_EMAIL'), os.getenv('OTP_EMAIL_PASSWORD'))
+            server.sendmail(msg['From'], [email], msg.as_string())
+        print(f"OTP sent to {email}.")  # Log successful send
+    except Exception as e:
+        print(f"Failed to send email: {e}")  # Log error message
 
 # Routes for authentication
 @app.route('/')
@@ -65,13 +69,15 @@ def register():
         email = request.form['email']
         password = request.form['password']
         
-        existing_user = mongo.db.loginUsers.find_one({'email': email})  # Updated collection name
+        existing_user = mongo.db.loginUsers.find_one({'email': email})
         if existing_user:
             flash("Email already registered!")
             return redirect(url_for('register'))
 
         otp = generate_otp()
-        send_otp_email(email, otp)
+        print(f"Generated OTP: {otp}")
+        send_otp_email(email, otp, username)
+        
         session['pending_user'] = {
             'username': username,
             'email': email,
