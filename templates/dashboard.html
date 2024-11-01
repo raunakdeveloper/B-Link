@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        a {
+            color: #007bff;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+            word-wrap: break-word;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .displayBtn {
+            margin-top: 20px;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            border: 1px solid #666666;
+            background-color: #E5E5E5;
+            font-size: 16px;
+            display: block;
+            width: 120px;
+            text-align: center;
+            margin: 0 10px;
+            text-decoration: none;
+        }
+
+        form button {
+            cursor: pointer;
+        }
+
+        .bottom-btn {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 40px;
+        }
+
+        /* Media query for smaller screens */
+        @media (max-width: 600px) {
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+            th {
+                display: none;
+            }
+            tr {
+                margin-bottom: 15px;
+                padding: 10px;
+                border: 1px solid #ddd;
+                background-color: white;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+            td {
+                text-align: right;
+                position: relative;
+                padding-left: 50%;
+            }
+            td::before {
+                content: attr(data-label);
+                position: absolute;
+                left: 0;
+                width: 50%;
+                padding-left: 10px;
+                white-space: nowrap;
+                text-align: left;
+                font-weight: bold;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Dashboard</h1>
+    <p>Welcome, {{ user.username }}!</p>
+    
+    <h2>Your Shortened URLs</h2>
+    <h3>Total URLs shortened : {{ total_urls }}</h3>
+    
+    {% if urls|length > 0 %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Original URL</th>
+                    <th>Shortened URL</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for url in urls %}
+                    <tr>
+                        <td data-label="Original URL">{{ url.original_url }}</td>
+                        <td data-label="Shortened URL">
+                            <a href="{{ request.host_url }}{{ url.short_hash }}">{{ request.host_url }}{{ url.short_hash }}</a>
+                        </td>
+                        <td data-label="Actions">
+                            <form action="/delete/{{ url.short_hash }}" method="POST" style="display:inline;">
+                                <button type="submit">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>You have not shortened any URLs yet.</p>
+    {% endif %}
+    
+    <div class="bottom-btn">
+        <a href="/" class="displayBtn">Home</a>
+        <a href="/logout" class="displayBtn">Logout</a>
+    </div>
+</body>
+</html>
