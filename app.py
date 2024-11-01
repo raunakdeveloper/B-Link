@@ -15,19 +15,20 @@ import logging
 # Load environment variables from .env file
 load_dotenv()
 
+# Initialize Flask app
 app = Flask(__name__)
 
 # MongoDB configuration
 app.config['MONGO_URI'] = f"mongodb+srv://{os.environ.get('MONGO_USER')}:{os.environ.get('MONGO_PASS')}@url-short-python.br0gv.mongodb.net/{os.environ.get('MONGO_DB')}?retryWrites=true&w=majority"
 mongo = PyMongo(app)
 
-# Session config for Redis
+# Session configuration for Redis
 app.config['SESSION_TYPE'] = 'redis'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_KEY_PREFIX'] = 'your_app_name:'  # Change to your app name
+app.config['SESSION_KEY_PREFIX'] = 'your_app_name:'  # Replace with your app name
 app.config['SESSION_REDIS'] = Redis(
-    host=os.getenv('REDIS_HOST', 'localhost'),  # Default to localhost for local development
+    host=os.getenv('REDIS_HOST', 'localhost'),  # Default to localhost for development
     port=int(os.getenv('REDIS_PORT', 6379)),    # Default port 6379
     password=os.getenv('REDIS_PASSWORD')         # Password if set, otherwise None
 )
@@ -39,27 +40,28 @@ logging.basicConfig(level=logging.INFO)
 
 # OTP generation and email configuration
 def generate_otp():
+    """Generate a 6-digit OTP."""
     return ''.join(random.choices(string.digits, k=6))
 
 def send_otp_email(email, otp, username):
+    """Send an OTP email to the user."""
     message_body = f"""
     Hi {username},
 
-    Your One-Time Password is: **{otp}**.
+    Your One-Time Password (OTP) is: **{otp}**.
 
-    Please enter this OTP to complete your registration process. Once registered, you can log in with your email and password.
+    Please enter this OTP to complete your registration. Once registered, you can log in with your email and password.
 
     Note: This OTP is valid for a limited time and should not be shared with anyone.
 
     Thank you,
     bLink Shortener Team
     """
-    
     msg = MIMEText(message_body)
     msg['Subject'] = 'bLink Shortener Registration OTP Code'
     msg['From'] = os.getenv('OTP_EMAIL')
     msg['To'] = email
-    
+
     try:
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
             server.login(os.getenv('OTP_EMAIL'), os.getenv('OTP_EMAIL_PASSWORD'))
@@ -72,7 +74,7 @@ def send_otp_email(email, otp, username):
 @app.route('/')
 def home():
     if 'user' in session:
-        return redirect(url_for('index')) 
+        return redirect(url_for('index'))
     return render_template('home.html')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -81,7 +83,7 @@ def register():
         username = request.form['username']
         email = request.form['email']
         password = request.form['password']
-        
+
         existing_user = mongo.db.loginUsers.find_one({'email': email})
         if existing_user:
             flash("Email already registered!")
@@ -90,14 +92,14 @@ def register():
         otp = generate_otp()
         logging.info(f"Generated OTP: {otp}")
         send_otp_email(email, otp, username)
-        
+
         session['pending_user'] = {
             'username': username,
             'email': email,
             'password': bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()),
             'otp': otp
         }
-        
+
         return redirect(url_for('verify_otp'))
     return render_template('register.html')
 
@@ -105,7 +107,7 @@ def register():
 def verify_otp():
     if 'pending_user' not in session:
         return redirect(url_for('register'))
-    
+
     if request.method == 'POST':
         input_otp = request.form['otp']
         if input_otp == session['pending_user']['otp']:
@@ -120,7 +122,7 @@ def verify_otp():
             return redirect(url_for('login'))
         else:
             flash("Invalid OTP! Please try again.")
-    
+
     return render_template('verify_otp.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -129,9 +131,8 @@ def login():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        
-        user = mongo.db.loginUsers.find_one({'email': email})
 
+        user = mongo.db.loginUsers.find_one({'email': email})
         if user is None:
             error = "This email is not registered. Please check or register."
         elif not bcrypt.checkpw(password.encode('utf-8'), user['password']):
@@ -150,6 +151,7 @@ def logout():
 
 # URL Shortener and Dashboard
 def generate_random_string(length=4):
+    """Generate a random string of given length for URL shortening."""
     characters = string.ascii_letters
     return ''.join(random.choice(characters) for _ in range(length))
 
@@ -172,13 +174,13 @@ def dashboard():
 def shorten_url():
     if 'user' not in session:
         return redirect(url_for('home'))
-    
+
     original_url = request.form['url']
     existing_url = mongo.db.urls.find_one({'original_url': original_url, 'user_email': session['user']['email']})
     if existing_url:
         short_url = request.host_url + existing_url['short_hash']
         return render_template('shortened.html', short_url=short_url, message="This URL has already been shortened.")
-    
+
     while True:
         random_string = generate_random_string()
         if not mongo.db.urls.find_one({'short_hash': random_string}):
@@ -191,7 +193,7 @@ def shorten_url():
         'original_url': original_url,
         'created_at': datetime.utcnow()
     })
-    
+
     return render_template('shortened.html', short_url=short_url)
 
 @app.route('/<short_hash>')
