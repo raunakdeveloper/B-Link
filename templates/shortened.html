@@ -7,7 +7,7 @@
     <style>
       body {
         font-family: Arial, sans-serif;
-        padding: 4rem;
+        padding: 3rem;
       }
       a {
         text-decoration: none;
@@ -16,6 +16,12 @@
       .home-link {
         margin-top: 2rem;
         cursor: pointer;
+      }
+      @media (max-width: 500px) {
+        .copybtn {
+        margin-top: 1rem;
+        cursor: pointer;
+        }
       }
     </style>
     <script>
@@ -34,7 +40,7 @@
     <p>{{ message if message else 'Your shortened URL is:' }}</p>
     <a href="{{ short_url }}" target="_blank" id="short-url">{{ short_url }}</a>
     &nbsp; &nbsp;
-    <button onclick="copyToClipboard()">Copy</button>
+    <button class="copybtn" onclick="copyToClipboard()">Copy</button>
     <br />
     <form action="/" method="get">
       <button class="home-link" type="submit">Back to Home</button>

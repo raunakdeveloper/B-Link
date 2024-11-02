@@ -26,11 +26,11 @@ mongo = PyMongo(app)
 app.config['SESSION_TYPE'] = 'redis'
 app.config['SESSION_PERMANENT'] = False
 app.config['SESSION_USE_SIGNER'] = True
-app.config['SESSION_KEY_PREFIX'] = 'your_app_name:'  # Replace with your app name
+app.config['SESSION_KEY_PREFIX'] = 'url_shortener:'
 app.config['SESSION_REDIS'] = Redis(
-    host=os.getenv('REDIS_HOST', 'localhost'),  # Default to localhost for development
-    port=int(os.getenv('REDIS_PORT', 6379)),    # Default port 6379
-    password=os.getenv('REDIS_PASSWORD')         # Password if set, otherwise None
+    host=os.getenv('REDIS_HOST', 'localhost'),  
+    port=int(os.getenv('REDIS_PORT', 6379)),   
+    password=os.getenv('REDIS_PASSWORD')      
 )
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 Session(app)
@@ -127,7 +127,6 @@ def verify_otp():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-     # Redirect logged-in users to the dashboard if they try to access the login page
     if 'user' in session:
         return redirect(url_for('index'))
 
@@ -149,7 +148,6 @@ def login():
 
 @app.route('/logout')
 def logout():
-    # Redirect logged-in users to the dashboard instead of letting them log out directly
     if 'user' in session:
         return redirect(url_for('dashboard'))
 

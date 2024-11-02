@@ -7,7 +7,7 @@
     <style>
       body {
         font-family: Arial, sans-serif;
-        padding: 4rem;
+        padding: 3rem;
       }
       h1 {
         color: #333;
@@ -21,6 +21,12 @@
       .dash-link {
         cursor: pointer;
       }
+      @media (max-width: 500px) {
+        .shortenbtn {
+          margin-top: 1rem;
+          cursor: pointer;
+        }
+      }
     </style>
   </head>
   <body>
@@ -33,7 +39,7 @@
         placeholder="Enter your URL here"
         required
       />
-      <button type="submit">Shorten</button>
+      <button class="shortenbtn" type="submit">Shorten</button>
     </form>
 
     <br /><br />
