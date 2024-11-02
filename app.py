@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_pymongo import PyMongo
 from flask_session import Session
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import random
 import string
@@ -33,6 +33,7 @@ app.config['SESSION_REDIS'] = Redis(
     password=os.getenv('REDIS_PASSWORD')      
 )
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Set session lifetime to 7 days
 Session(app)
 
 # Logging configuration
@@ -142,6 +143,7 @@ def login():
             error = "Invalid password! Please try again."
         else:
             session['user'] = {'username': user['username'], 'email': user['email']}
+            session.permanent = True  # Make the session permanent
             return redirect(url_for('index'))
 
     return render_template('login.html', error=error)
