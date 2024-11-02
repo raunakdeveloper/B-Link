@@ -148,9 +148,6 @@ def login():
 
 @app.route('/logout')
 def logout():
-    if 'user' in session:
-        return redirect(url_for('dashboard'))
-
     session.pop('user', None)
     flash("You have been logged out.")
     return redirect(url_for('home'))
