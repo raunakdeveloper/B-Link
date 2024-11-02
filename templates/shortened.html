@@ -17,33 +17,74 @@
         margin-top: 2rem;
         cursor: pointer;
       }
-      @media (max-width: 500px) {
-        .copybtn {
-        margin-top: 1rem;
+      .copybtn {
         cursor: pointer;
+        margin-right: 0.5rem;
+      }
+      .sharebtn {
+        cursor: pointer;
+      }
+      .controlbtn {
+        display: inline;
+        margin-left: 2rem;
+      }
+      @media (max-width: 500px) {
+        .controlbtn {
+          margin-top: 1rem;
+          margin-left: 0;
+          display: flex;
+          gap: 10px;
         }
+        .copybtn {
+        margin-right: 0;
+      }
       }
     </style>
-    <script>
-      function copyToClipboard() {
-        const url = document.getElementById('short-url').textContent;
-        navigator.clipboard.writeText(url).then(() => {
-          alert('URL copied to clipboard!');
-        }, (err) => {
-          console.error('Could not copy URL: ', err);
-        });
-      }
-    </script>
   </head>
   <body>
     <h1>Shortened URL</h1>
-    <p>{{ message if message else 'Your shortened URL is:' }}</p>
+    <p>{{ message if message else 'Your shortened URL is Ready.' }}</p>
     <a href="{{ short_url }}" target="_blank" id="short-url">{{ short_url }}</a>
-    &nbsp; &nbsp;
-    <button class="copybtn" onclick="copyToClipboard()">Copy</button>
+    <div class="controlbtn">
+      <button class="copybtn" onclick="copyToClipboard()">Copy</button>
+      <button class="sharebtn" onclick="shareUrl()">Share</button>
+    </div>
+
     <br />
     <form action="/" method="get">
       <button class="home-link" type="submit">Back to Home</button>
     </form>
+    <script>
+      function copyToClipboard() {
+        const url = document.getElementById("short-url").textContent;
+        navigator.clipboard
+          .writeText(url)
+          .then(() => {
+            alert("URL copied to clipboard!");
+          })
+          .catch((err) => {
+            console.error("Could not copy URL: ", err);
+          });
+      }
+
+      function shareUrl() {
+        const url = document.getElementById("short-url").textContent;
+        if (navigator.share) {
+          navigator
+            .share({
+              title: "Check out this shortened URL!",
+              url: url,
+            })
+            .then(() => {
+              console.log("URL shared successfully");
+            })
+            .catch((err) => {
+              console.error("Error sharing URL:", err);
+            });
+        } else {
+          alert("Sharing is not supported in this browser.");
+        }
+      }
+    </script>
   </body>
 </html>

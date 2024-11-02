@@ -13,7 +13,7 @@
         color: #333;
       }
       a {
-        color: #007bff;
+        text-decoration: none;
       }
       table {
         width: 100%;
@@ -22,45 +22,42 @@
       }
       th,
       td {
-        padding: 12px;
         border: 1px solid #ddd;
+        padding: 8px;
         text-align: left;
-        word-wrap: break-word;
       }
       th {
         background-color: #f2f2f2;
       }
-      tr:hover {
-        background-color: #f1f1f1;
+      /* Set specific widths for table columns */
+      th.original-url {
+        width: 50%;
       }
-
-      .displayBtn {
+      th.shortened-url,
+      td.shortened-url {
+        width: 25%;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+      th.actions,
+      td.actions {
+        width: 25%;
+        white-space: nowrap;
+      }
+      td.original-url {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+      }
+      .actions button {
+        margin-right: 10px;
+      }
+      .bottom-btn {
         margin-top: 20px;
-        padding: 10px 20px;
-        cursor: pointer;
-        border-radius: 5px;
-        border: 1px solid #666666;
-        background-color: #e5e5e5;
-        color: #000;
-        font-size: 16px;
-        display: block;
-        width: 120px;
-        text-align: center;
-        margin: 0 10px;
+      }
+      .bottom-btn a {
+        margin-right: 15px;
         text-decoration: none;
       }
-
-      form button {
-        cursor: pointer;
-      }
-
-      .bottom-btn {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 40px;
-      }
-
       p {
         font-size: 25px;
         color: #666;
@@ -71,8 +68,32 @@
         justify-content: space-between;
         align-items: center;
       }
-      /* Media query for smaller screens */
-      @media (max-width: 700px) {
+      .bottom-btn {
+        margin: 50px 0;
+        text-align: center; /* Center align the buttons */
+      }
+      .bottom-btn a {
+        margin-right: 15px;
+        text-decoration: none;
+        padding: 8px 16px; /* Make buttons look like standard buttons */
+        background-color: #E5E5E5;
+        color: rgb(0, 0, 0);
+        display: inline-block;
+        cursor: pointer;
+        border-radius: 5px;
+        border: 1px solid #666666;
+      }
+      /* Responsive design for medium and small screens */
+      @media (max-width: 900px) {
+        th.original-url {
+          width: auto;
+        }
+        td.original-url {
+          word-break: break-word;
+        }
+      }
+      /* Mobile-friendly design for very small screens */
+      @media (max-width: 767px) {
         table,
         thead,
         tbody,
@@ -83,6 +104,20 @@
         }
         th {
           display: none;
+        }
+        th.original-url {
+          width: auto;
+        }
+        th.shortened-url,
+        td.shortened-url {
+          width: auto;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+        th.actions,
+        td.actions {
+          width: auto;
+          padding-left: 30%;
         }
         tr {
           margin-bottom: 15px;
@@ -106,6 +141,9 @@
           text-align: left;
           font-weight: bold;
         }
+        .actions button {
+          margin: 5px 0;
+        }
         .head {
           display: block;
         }
@@ -119,27 +157,42 @@
     </div>
 
     <h3>Your Shortened URLs</h3>
-    <h3>Total URLs shortened : {{ total_urls }}</h3>
+    <h3>Total URLs shortened: {{ total_urls }}</h3>
 
     {% if urls|length > 0 %}
     <table>
       <thead>
         <tr>
-          <th>Original URL</th>
-          <th>Shortened URL</th>
-          <th>Actions</th>
+          <th class="original-url">Original URL</th>
+          <th class="shortened-url">Shortened URL</th>
+          <th class="actions">Actions</th>
         </tr>
       </thead>
       <tbody>
         {% for url in urls %}
         <tr>
-          <td data-label="Original URL">{{ url.original_url }}</td>
-          <td data-label="Shortened URL">
-            <a href="{{ request.host_url }}{{ url.short_hash }}"
-              >{{ request.host_url }}{{ url.short_hash }}</a
-            >
+          <td class="original-url" data-label="Original URL">
+            {{ url.original_url }}
           </td>
-          <td data-label="Actions">
+          <td class="shortened-url" data-label="Shortened URL">
+            <a
+              href="{{ request.host_url }}{{ url.short_hash }}"
+              target="_blank"
+            >
+              {{ request.host_url }}{{ url.short_hash }}
+            </a>
+          </td>
+          <td class="actions" data-label="Actions">
+            <button
+              onclick="copyToClipboard('{{ request.host_url }}{{ url.short_hash }}')"
+            >
+              Copy
+            </button>
+            <button
+              onclick="shareUrl('{{ request.host_url }}{{ url.short_hash }}')"
+            >
+              Share
+            </button>
             <form
               action="/delete/{{ url.short_hash }}"
               method="POST"
@@ -160,5 +213,27 @@
       <a href="/" class="displayBtn">Home</a>
       <a href="/logout" class="displayBtn">Logout</a>
     </div>
+
+    <script>
+      function copyToClipboard(text) {
+        navigator.clipboard
+          .writeText(text)
+          .then(() => alert("URL copied to clipboard!"))
+          .catch((err) => console.error("Failed to copy:", err));
+      }
+
+      function shareUrl(url) {
+        if (navigator.share) {
+          navigator
+            .share({
+              title: "Check out this shortened URL!",
+              url: url,
+            })
+            .catch((err) => console.error("Failed to share:", err));
+        } else {
+          alert("Sharing is not supported in this browser.");
+        }
+      }
+    </script>
   </body>
 </html>
