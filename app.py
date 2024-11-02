@@ -127,6 +127,10 @@ def verify_otp():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+     # Redirect logged-in users to the dashboard if they try to access the login page
+    if 'user' in session:
+        return redirect(url_for('index'))
+
     error = None
     if request.method == 'POST':
         email = request.form['email']
@@ -145,6 +149,10 @@ def login():
 
 @app.route('/logout')
 def logout():
+    # Redirect logged-in users to the dashboard instead of letting them log out directly
+    if 'user' in session:
+        return redirect(url_for('dashboard'))
+
     session.pop('user', None)
     flash("You have been logged out.")
     return redirect(url_for('home'))
